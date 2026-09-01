@@ -10,9 +10,9 @@
 
 Tomar bases de datos astronómicas, crear un script que mapee estos valores matemáticos a parámetros acústicos
 
-Ej: Intensidad de la luz = Volúmen
-    Longitud de onda = Tono (Frecuencia aguda o grave)
-    Tipo de radiación = Timbre (tipo de instrumento o sintetizador)
+Ej: -Intensidad de la luz = Volúmen
+    -Longitud de onda = Tono (Frecuencia aguda o grave)
+    -Tipo de radiación = Timbre (tipo de instrumento o sintetizador)
 
 ## Pregunta principal
 
