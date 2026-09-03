@@ -8,9 +8,9 @@
 
 ## Idea del proyecto
 
-Tomar bases de datos astronómicas, crear un script que mapee estos valores matemáticos a parámetros acústicos
-
-Ej: -Distancia = Efecto (Eco, distorsión)  
+Tomar bases de datos astronómicas, crear un script que mapee estos valores matemáticos a parámetros acústicos  
+Ej:  
+    -Distancia = Efecto (Eco, distorsión)  
     -Temperatura = Frecuencia en hercios  
     -Tipo de radiación = Timbre (tipo de instrumento o sintetizador)  
 
