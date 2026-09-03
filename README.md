@@ -10,9 +10,9 @@
 
 Tomar bases de datos astronómicas, crear un script que mapee estos valores matemáticos a parámetros acústicos
 
-Ej: -Distancia = Efecto (Eco, distorsión)
-    -Temperatura = Frecuencia en hercios
-    -Tipo de radiación = Timbre (tipo de instrumento o sintetizador)
+Ej: -Distancia = Efecto (Eco, distorsión)  
+    -Temperatura = Frecuencia en hercios  
+    -Tipo de radiación = Timbre (tipo de instrumento o sintetizador)  
 
 ## Pregunta principal
 
@@ -53,6 +53,6 @@ Datos
 
 ## Próximos pasos
 
-Hito 1. Extracción y traducción matemática de datos
-Hito 2. Traducir datos a sonidos
-Hito 3. Creación frontend interactivo
+Hito 1. Extracción y traducción matemática de datos  
+Hito 2. Traducir datos a sonidos  
+Hito 3. Creación frontend interactivo  
