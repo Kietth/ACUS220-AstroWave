@@ -10,8 +10,8 @@
 
 Tomar bases de datos astronómicas, crear un script que mapee estos valores matemáticos a parámetros acústicos
 
-Ej: -Intensidad de la luz = Volúmen
-    -Longitud de onda = Tono (Frecuencia aguda o grave)
+Ej: -Distancia = Efecto (Eco, distorsión)
+    -Temperatura = Frecuencia en hercios
     -Tipo de radiación = Timbre (tipo de instrumento o sintetizador)
 
 ## Pregunta principal
@@ -53,6 +53,6 @@ Datos
 
 ## Próximos pasos
 
-1. ...
-2. ...
-3. ...
+Hito 1. Extracción y traducción matemática de datos
+Hito 2. Traducir datos a sonidos
+Hito 3. Creación frontend interactivo
