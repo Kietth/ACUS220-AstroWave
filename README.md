@@ -44,7 +44,7 @@ Durante el semestre desarrollaremos un flujo de trabajo que vaya desde la extrac
 
 ## Pipeline provisional
 
-Datos
+Datos  
 → Auditoría, extracción y limpieza (manejo de NaNs con Pandas)  
 → Modelo de transformación matemática (Mapeo de Teff a Frecuencia y Paralaje a Reverb)  
 → Almacenamiento estructurado (dataset_astrowave.csv)  
