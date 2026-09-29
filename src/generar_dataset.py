@@ -34,7 +34,7 @@ simbad_custom = Simbad()
 simbad_custom.add_votable_fields('plx_value', 'sp_type')
 
 lista_estrellas = ['Betelgeuse', 'Sirius', 'Rigel', 'Aldebaran', 'Vega', 
-                   #'Polaris', 'Antares', 'Altair', 'Deneb'
+                   'Polaris', 'Antares', 'Altair', 'Deneb'
                     ]
 datos_finales = []
 
