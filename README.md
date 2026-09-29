@@ -39,21 +39,21 @@ Buscamos representar relaciones físicas interpretables a través del sonido (so
 
 ## Alcance inicial
 
-¿Qué pensamos que sería razonable desarrollar durante el semestre?
+¿Qué pensamos que sería razonable desarrollar durante el semestre?  
 Durante el semestre desarrollaremos un flujo de trabajo que vaya desde la extracción automática y limpieza de datos astronómicos hasta la síntesis de audio. El objetivo final razonable es una página interactiva (frontend) con modelos 3D de las estrellas (Three.js), visualización de ondas (Wavesurfer.js) y la telemetría donde el usuario pueda "escuchar" la firma acústica de un catálogo seleccionado de astros.
 
 ## Pipeline provisional
 
 Datos
-→ Auditoría, extracción y limpieza (manejo de NaNs con Pandas)
-→ Modelo de transformación matemática (Mapeo de Teff a Frecuencia y Paralaje a Reverb)
-→ Almacenamiento estructurado (dataset_astrowave.csv)
-→ Síntesis de parámetros acústicos a señales de sonido (Python/Scipy)
-→ Despliegue en interfaz web interactiva (Frontend)
+→ Auditoría, extracción y limpieza (manejo de NaNs con Pandas)  
+→ Modelo de transformación matemática (Mapeo de Teff a Frecuencia y Paralaje a Reverb)  
+→ Almacenamiento estructurado (dataset_astrowave.csv)  
+→ Síntesis de parámetros acústicos a señales de sonido (Python/Scipy)  
+→ Despliegue en interfaz web interactiva (Frontend)  
 ## Posibles dificultades
 
 - Gestión de datos: Manejar tablas con miles de filas de datos
-- Ausencia de datos utilizables: Lidiar con valores físicos faltantes ($NaN$) en los registros, como ocurrió al buscar la distancia directa de Betelgeuse en SIMBAD.
+- Ausencia de datos utilizables: Lidiar con valores físicos faltantes ($NaN$) en los registros, como ocurrió al buscar la distancia directa de Betelgeuse en SIMBAD o la ausencia de temperatura efectiva para estrellas como Polaris en el catálogo TIC.
 - Cruces de catálogos (Cross-match): Evitar asociaciones espaciales erróneas al combinar identificadores de diferentes catálogos astronómicos (ej. SIMBAD vs Gaia).
   
 ## Estado actual
@@ -66,6 +66,6 @@ Datos
 
 ## Próximos pasos
 
-Hito 1. Extracción y traducción matemática de datos  
-Hito 2. Traducir datos a sonidos  
-Hito 3. Creación frontend interactivo  
+1. Investigar la librería Scipy para dar inicio al Hito 2  
+2. Crear script que lea la columna de AstroWave_Freq_Hz de nuestro dataset y genere los archivos wav  
+3. Definir matemáticamente cómo la columna Tipo_Espectral modificará nuestro sonido  
