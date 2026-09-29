@@ -33,7 +33,9 @@ def calcular_reverb(plx_mas):
 simbad_custom = Simbad()
 simbad_custom.add_votable_fields('plx_value', 'sp_type')
 
-lista_estrellas = ['Betelgeuse', 'Sirius', 'Rigel', 'Aldebaran', 'Vega', 'Polaris']
+lista_estrellas = ['Betelgeuse', 'Sirius', 'Rigel', 'Aldebaran', 'Vega', 
+                   #'Polaris', 'Antares', 'Altair', 'Deneb'
+                    ]
 datos_finales = []
 
 print('Generando dataset de estrellas...')
@@ -64,15 +66,18 @@ for estrella in lista_estrellas:
         freq_hz = calcular_frec(teff_value)
         reverb_mix = calcular_reverb(plx_value)
 
-        datos_finales.append({
-            'Estrella': estrella,
-            'Tipo_Espectral': sp_type,
-            'Temp_K': teff_value,
-            'Paralaje_mas': plx_value,
-            'AstroWave_Freq_Hz': freq_hz,
-            'AstroWave_Reverb': reverb_mix
+        if pd.isna(teff_value) or pd.isna(plx_value):
+            print(f"Datos incompletos (Teff: {teff_value}, Plx: {plx_value}). Omitiendo estrella.")
+        else:
+            datos_finales.append({
+                "Estrella": estrella,
+                "Tipo_Espectral": sp_type,
+                "Temp_K": teff_value,
+                "Paralaje_mas": plx_value,
+                "AstroWave_Freq_Hz": freq_hz,
+                "AstroWave_Reverb": reverb_mix
         })
-        print(f'Datos extraidos!')
+        print(f'{estrella} procesada!')
     except Exception as e:
         print(f'Error al procesar {estrella}: {e}')
 
