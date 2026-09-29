@@ -12,9 +12,9 @@ Tomar bases de datos astronómicas, crear un script que mapee estos valores mate
 
 Ej:  
 
-    -Distancia = Efecto (Eco, distorsión)  
-    -Temperatura = Frecuencia en hercios  
-    -Tipo de radiación = Timbre (tipo de instrumento o sintetizador)  
+    -Paralaje (mas) = Efecto espacial (Cantidad de reverberación)  
+    -Temperatura Efectiva (Kelvin)= Frecuencia en hercios  
+    -Tipo Espectral = Timbre (Forma de la onda sonora o tipo de sintetizador)  
 
 ## Pregunta principal
 Pregunta provisional que queremos estudiar.
