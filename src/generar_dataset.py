@@ -33,7 +33,7 @@ def calcular_reverb(plx_mas):
 simbad_custom = Simbad()
 simbad_custom.add_votable_fields('plx_value', 'sp_type')
 
-lista_estrellas = ['Betelgeuse', 'Sirius', 'Rigel', 'Aldebaran', 'Vega', 
+lista_estrellas = ['Sun','Betelgeuse', 'Sirius', 'Rigel', 'Aldebaran', 'Vega', 
                    'Polaris', 'Antares', 'Altair', 'Deneb'
                     ]
 datos_finales = []
@@ -45,23 +45,30 @@ for estrella in lista_estrellas:
     print(f'Buscando datos para: {estrella}...')
 
     try:
-        resultado_simbad = simbad_custom.query_object(estrella)
-        if resultado_simbad is None:
-            print(f'No se encontraron datos en Simbad para {estrella}.')
-            continue
 
-        sp_type = resultado_simbad['sp_type'][0]
-        plx_value = float(resultado_simbad['plx_value'][0]) if not np.ma.is_masked(resultado_simbad['plx_value'][0]) else np.nan
+        if estrella == 'Sun':
+            sp_type = 'G2V'
+            plx_value = 8794.148
+            teff_value = 5778.0
+            print('Datos del Sol asignados manualmente.')
+        else:
+            resultado_simbad = simbad_custom.query_object(estrella)
+            if resultado_simbad is None:
+                print(f'No se encontraron datos en Simbad para {estrella}.')
+                continue
 
-        ids_simbad = Simbad.query_objectids(estrella).to_pandas()
-        tic_matches = ids_simbad[ids_simbad['id'].str.match(r'^TIC\s+\d+$', na=False)].reset_index(drop=True)
+            sp_type = resultado_simbad['sp_type'][0]
+            plx_value = float(resultado_simbad['plx_value'][0]) if not np.ma.is_masked(resultado_simbad['plx_value'][0]) else np.nan
 
-        teff_value = np.nan
-        if len(tic_matches) > 0:
-            tic_id = int(str(tic_matches.loc[0, 'id']).split()[1])
-            tic_data = Catalogs.query_criteria(catalog='TIC', ID=tic_id)
-            if 'Teff' in tic_data.colnames and not np.ma.is_masked(tic_data['Teff'][0]):
-                teff_value = float(tic_data['Teff'][0])
+            ids_simbad = Simbad.query_objectids(estrella).to_pandas()
+            tic_matches = ids_simbad[ids_simbad['id'].str.match(r'^TIC\s+\d+$', na=False)].reset_index(drop=True)
+
+            teff_value = np.nan
+            if len(tic_matches) > 0:
+                tic_id = int(str(tic_matches.loc[0, 'id']).split()[1])
+                tic_data = Catalogs.query_criteria(catalog='TIC', ID=tic_id)
+                if 'Teff' in tic_data.colnames and not np.ma.is_masked(tic_data['Teff'][0]):
+                    teff_value = float(tic_data['Teff'][0])
 
         freq_hz = calcular_frec(teff_value)
         reverb_mix = calcular_reverb(plx_value)
