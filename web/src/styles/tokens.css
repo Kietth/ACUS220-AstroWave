@@ -1,15 +1,28 @@
 :root {
   color-scheme: dark;
+
   --bg: #05060f;
-  --surface: #101118;
-  --surface-2: #181a28;
-  --line: #23253a;
+  --surface: #0b1a2b;
+  --surface-2: #10263b;
+  --line: #1b3550;
   --text: #e8eaf2;
   --muted: #a3a9bf;
-  --accent: #ffc857;
-  --teal: #3dd6c6;
+  --accent: #ffd45e;
+  --teal: #2dd4bf;
   --radius: 12px;
-  --font: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font: 'Sora', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --mono: ui-monospace, Menlo, Consolas, monospace;
-  --target: 44px; /* tamaño mínimo táctil */
+  --target: 44px;
+
+  /* Movimiento: mismas curvas y duraciones en CSS y en JS (src/motion.js).
+     enter = lo que llega (arranca rápido y aterriza suave); exit = lo que se va (arranca lento y sale rápido). */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --dur-short: 240ms;
+  --dur-med: 420ms;
+  --dur-long: 640ms;
+
+  /* Luz de la marca derramada sobre el espacio (detrás del logo). */
+  --glow-teal: rgba(45, 212, 191, 0.1);
 }

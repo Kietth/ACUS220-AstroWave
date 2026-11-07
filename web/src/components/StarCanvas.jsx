@@ -1,39 +1,62 @@
-import { useEffect, useRef } from 'react';
-import { SkyScene } from '../three/SkyScene.js';
+import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
+import { World } from '../three/World.js';
 
-/** Puente React <-> motor 3D. El motor se crea una vez; las props solo disparan métodos. */
-export default function StarCanvas({ stars, mode, selectedId, onSelect }) {
-  const canvasRef = useRef(null);
+
+
+
+
+const StarCanvas = forwardRef(function StarCanvas({ stars, intro, mode, selectedId, onSelect, onSettle, onArrive, interactive }, ref) {
+  const hostRef = useRef(null);
   const labelsRef = useRef(null);
-  const sceneRef = useRef(null);
-  const onSelectRef = useRef(onSelect);
-  onSelectRef.current = onSelect;
+  const worldRef = useRef(null);
+  const callbacks = useRef({ onSelect, onSettle, onArrive });
+  callbacks.current = { onSelect, onSettle, onArrive };
+
+  useImperativeHandle(ref, () => ({
+    explore: (onArrive) => worldRef.current?.explore(onArrive),
+    skip: () => worldRef.current?.skipFlight(),
+    zoom: (factor) => worldRef.current?.zoom(factor),
+    resetView: () => worldRef.current?.resetView(),
+  }), []);
+
 
   useEffect(() => {
-    const scene = new SkyScene({
-      canvas: canvasRef.current,
+    const canvas = document.createElement('canvas');
+    canvas.setAttribute('aria-label', 'Mapa estelar interactivo');
+    hostRef.current.prepend(canvas);
+    const world = new World({
+      canvas,
       labelLayer: labelsRef.current,
       stars,
-      onSelect: (id) => onSelectRef.current(id),
       reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+      onSelect: (id) => callbacks.current.onSelect(id),
+      onSettle: () => callbacks.current.onSettle(),
+      onArrive: (p) => callbacks.current.onArrive?.(p),
     });
-    sceneRef.current = scene;
-    return () => scene.dispose();
-  }, [stars]);
+    world.start(intro);
+    worldRef.current = world;
+    return () => {
+      world.dispose();
+      canvas.remove();
+      worldRef.current = null;
+    };
+  }, [stars, intro]);
 
-  useEffect(() => sceneRef.current?.setMode(mode), [mode]);
-  useEffect(() => sceneRef.current?.setSelected(selectedId), [selectedId]);
+  useEffect(() => {
+    if (interactive) worldRef.current?.setMode(mode);
+  }, [mode, interactive]);
+  useEffect(() => {
+    worldRef.current?.setInteractive(interactive);
+  }, [interactive]);
+  useEffect(() => {
+    worldRef.current?.setSelected(selectedId);
+  }, [selectedId]);
 
   return (
-    <div className="map">
-      <canvas ref={canvasRef} className="map__canvas" aria-label="Mapa estelar interactivo" />
+    <div ref={hostRef} className="map">
       <div ref={labelsRef} className="map__labels" aria-hidden="true" />
-      <div className="zoom">
-        <button className="btn btn--icon" aria-label="Acercar" onClick={() => sceneRef.current?.zoom(0.85)}>+</button>
-        <button className="btn btn--icon" aria-label="Alejar" onClick={() => sceneRef.current?.zoom(1.18)}>−</button>
-        <button className="btn btn--icon" aria-label="Restablecer vista" onClick={() => sceneRef.current?.resetView()}>⌂</button>
-      </div>
-      <p className="hint">Arrastra para orbitar · rueda para zoom · clic en una estrella para escucharla</p>
     </div>
   );
-}
+});
+
+export default StarCanvas;

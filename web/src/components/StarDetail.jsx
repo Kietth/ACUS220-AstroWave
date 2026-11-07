@@ -12,10 +12,11 @@ function Metric({ label, value, fill }) {
   );
 }
 
-export default function StarDetail({ star }) {
+/** En pantallas pequeñas es un panel inferior que se abre con el botón «Datos» del reproductor. */
+export default function StarDetail({ star, open }) {
   const distance = star.isLocal ? 'estrella local' : `${star.distancePc.toFixed(1)} pc (${(star.distancePc * 3.2616).toFixed(0)} años luz)`;
   return (
-    <aside className="panel detail" aria-live="polite">
+    <aside className={`panel detail ${open ? 'is-open' : ''}`} aria-live="polite">
       <div>
         <h2 className="detail__name">{star.name}</h2>
         <span className="muted">{star.spectralType} · {distance}</span>

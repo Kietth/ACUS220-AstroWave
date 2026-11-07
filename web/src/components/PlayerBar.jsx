@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-export default function PlayerBar({ star, playing, engine, volume, onVolume, onToggle, onPrev, onNext }) {
+export default function PlayerBar({ star, playing, engine, volume, onVolume, onToggle, onPrev, onNext, detailOpen, onToggleDetail }) {
   const scopeRef = useRef(null);
   const timeRef = useRef(null);
 
@@ -18,7 +18,7 @@ export default function PlayerBar({ star, playing, engine, volume, onVolume, onT
       const data = new Uint8Array(engine.analyser.fftSize);
       engine.analyser.getByteTimeDomainData(data);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.strokeStyle = '#3dd6c6';
+      ctx.strokeStyle = '#2dd4bf';
       ctx.lineWidth = 2;
       ctx.beginPath();
       for (let i = 0; i < data.length; i += 2) {
@@ -50,6 +50,7 @@ export default function PlayerBar({ star, playing, engine, volume, onVolume, onT
         Volumen{' '}
         <input type="range" min="0" max="1" step="0.01" value={volume} onChange={(e) => onVolume(Number(e.target.value))} />
       </label>
+      <button className="btn show-sm" aria-expanded={detailOpen} onClick={onToggleDetail}>Datos</button>
     </footer>
   );
 }

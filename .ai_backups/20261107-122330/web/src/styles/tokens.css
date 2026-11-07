@@ -1,0 +1,15 @@
+:root {
+  color-scheme: dark;
+  --bg: #05060f;
+  --surface: #101118;
+  --surface-2: #181a28;
+  --line: #23253a;
+  --text: #e8eaf2;
+  --muted: #a3a9bf;
+  --accent: #ffc857;
+  --teal: #3dd6c6;
+  --radius: 12px;
+  --font: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: ui-monospace, Menlo, Consolas, monospace;
+  --target: 44px; /* tamaño mínimo táctil */
+}
