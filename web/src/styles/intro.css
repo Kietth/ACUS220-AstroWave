@@ -1,41 +1,30 @@
-/* ───────────────────────── Fases ─────────────────────────
-   flight  → vuelo cinemático (solo canvas)
-   welcome → llegada: el logo y el texto se revelan al ritmo de la frenada de la cámara
-   entering → "Explorar": el logo viaja a la barra y la interfaz entra escalonada
-   ready   → interactivo                                                    */
 .app:is([data-phase='flight'], [data-phase='welcome']) .ui { visibility: hidden; }
 
-.skip {
-  position: fixed; z-index: 6;
-  right: max(16px, env(safe-area-inset-right));
-  bottom: calc(env(safe-area-inset-bottom) + 16px);
-  background: rgba(11, 26, 43, 0.6);
-  animation: fadein 0.6s ease 1s both;
-}
+/* La altura que ocupa el horizonte del planeta de destino (ver DEST.top en three/flightLayout.js). */
+:root { --horizon: 30dvh; }
 
-/* ───────────────────────── Llegada ─────────────────────────
-   Las variables --a-* (0 → 1) las escribe App.jsx desde el reloj del 3D: no hay animaciones por tiempo
-   independientes, el DOM sigue a la cámara. Valen 0 hasta que la nave empieza a frenar. */
 .arrive { display: contents; --a-glow: 0; --a-logo: 0; --a-lead: 0; --a-sub: 0; --a-cta: 0; }
 
 .welcome {
   position: fixed; inset: 0; z-index: 5;
-  display: flex; flex-direction: column; align-items: center;
-  gap: clamp(10px, 2dvh, 18px);
-  padding: calc(clamp(32px, 13dvh, 140px) + env(safe-area-inset-top)) 24px 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: clamp(10px, 2dvh, 20px);
+  /* El contenido se centra en el cielo libre sobre el horizonte (centro óptico ≈ 35 % de la altura),
+     no pegado arriba: así no queda un hueco muerto bajo el botón. */
+  padding: calc(24px + env(safe-area-inset-top)) 24px calc(var(--horizon) + env(safe-area-inset-bottom));
   text-align: center;
   pointer-events: none;
 }
 .welcome > * { pointer-events: auto; }
 
-/* Velo de contraste (texto sobre escena en movimiento) teñido con el azul de la marca,
-   más un halo teal que deja caer la luz del logo sobre el espacio. */
+
+
 .welcome::before {
   content: ''; position: absolute; inset: 0; z-index: -1;
   opacity: var(--a-glow);
   background:
-    radial-gradient(ellipse 58% 40% at 50% 22%, var(--glow-teal), transparent 72%),
-    radial-gradient(ellipse at 50% 24%, rgba(5, 6, 15, 0.55), transparent 62%);
+    radial-gradient(ellipse 52% 30% at 50% 35%, var(--glow-teal), transparent 72%),
+    radial-gradient(ellipse 46% 30% at 50% 35%, rgba(5, 6, 15, 0.5), transparent 70%);
 }
 
 /* El logo "se acerca" y se enfoca: crece 0.9 → 1 mientras el desenfoque de movimiento se disuelve. */
@@ -111,14 +100,11 @@
 .app:is([data-phase='entering'], [data-phase='ready']) .hint { animation: ui-in-fade var(--dur-long) var(--ease-enter) 900ms backwards; }
 
 @media (max-height: 520px) {
-  .welcome { padding-top: calc(16px + env(safe-area-inset-top)); gap: 8px; }
+  .welcome { padding-top: calc(12px + env(safe-area-inset-top)); gap: 8px; }
   .welcome__sub { display: none; }
 }
 
-@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
-
 @media (prefers-reduced-motion: reduce) {
-  .skip { animation: none; }
   .welcome__logo, .welcome__lead, .welcome__sub, .welcome__cta { transform: none; filter: none; }
   .welcome.is-leaving :is(.welcome__lead, .welcome__sub, .welcome__cta), .welcome.is-leaving::before { transition: none; }
   .topbar::before, .topbar > *, .catalog, .detail, .zoom, .player, .hint { animation: none !important; }

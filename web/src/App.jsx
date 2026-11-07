@@ -14,12 +14,12 @@ import PlayerBar from './components/PlayerBar.jsx';
 
 const SEEN_KEY = 'astrowave:intro-seen';
 
-// Coreografía de la llegada. p (0 → 1) es el avance de la frenada de la cámara.
-// Cada elemento de la bienvenida toma un tramo de p: el logo resuelve primero (cuando
-// la nave casi se detuvo y la estela se encoge) y el botón al final. Un solo reloj para
-// el 3D y el DOM: lo que se ve en el canvas y en la interfaz es el mismo movimiento.
+
+
+
+
 const REVEAL = { glow: [0, 0.8], logo: [0.08, 0.55], lead: [0.32, 0.78], sub: [0.46, 0.9], cta: [0.6, 1] };
-const ARM_AT = 0.72; // el botón solo se activa cuando ya es visible
+const ARM_AT = 0.72;
 const reveal = (p, [from, to]) => EASE.standard(clamp01((p - from) / (to - from)));
 const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -49,7 +49,7 @@ export default function App() {
 
   const selected = stars.find((s) => s.id === selectedId);
 
-  // Escribe el progreso como variables CSS en un único contenedor (sin re-render de React).
+
   const applyArrive = useCallback((p) => {
     const el = arriveRef.current;
     if (!el) return;
@@ -64,7 +64,7 @@ export default function App() {
 
   const onDock = useCallback(() => setDocked(true), []);
 
-  // Red de seguridad: si por algo el 3D no reporta la llegada, la bienvenida igual aparece.
+
   useEffect(() => {
     if (phase !== 'welcome') return undefined;
     const id = window.setTimeout(() => applyArrive(1), 4500);
@@ -82,6 +82,8 @@ export default function App() {
   }, []);
 
 
+  // Sin botón visible: la intro dura 6,4 s y solo se ve la primera vez. Aun así sigue siendo
+  // interrumpible (clic/toque en cualquier parte, Esc, Espacio o Enter) para no bloquear a nadie.
   useEffect(() => {
     if (phase !== 'flight') return undefined;
     const onKey = (e) => {
@@ -161,9 +163,6 @@ export default function App() {
         />
       </div>
 
-      {phase === 'flight' && (
-        <button className="btn skip" onClick={() => mapRef.current?.skip()}>Saltar intro</button>
-      )}
       <div ref={arriveRef} className="arrive">
         {(phase === 'welcome' || phase === 'entering') && (
           <Welcome leaving={phase === 'entering'} armed={armed} onExplore={explore} onDock={onDock} />

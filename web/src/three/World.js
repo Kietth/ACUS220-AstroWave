@@ -3,46 +3,17 @@ import { LIGHT_SCALE, OUTPUT_COLOR_SPACE } from './legacyColor.js';
 import { SKY_RADIUS } from '../domain/starMath.js';
 import { EASE, clamp01 } from '../motion.js';
 import { WarpField } from './warp.js';
+import { BODIES, DEG, DEST, FLIGHT_FOV, FOV_KICK, T, T_END, T_SETTLE, VMAX, depthFade, edgeFade, placeBodies, placeDest, speedAt } from './flightLayout.js';
 
-const DEG = Math.PI / 180;
 const DEFAULT_VIEW = { yaw: 80 * DEG, pitch: 0, fov: 60, dist: 220 };
-const FLIGHT_VIEW = { yaw: 90 * DEG, pitch: 0, fov: 70, dist: 220 };
+const FLIGHT_VIEW = { yaw: 90 * DEG, pitch: 0, fov: FLIGHT_FOV, dist: 220 };
 const LIMITS = { fov: [25, 90], dist: [60, 700] };
 const STAR_ALPHA_FLIGHT = 0.6;
-
-
-const VMAX = 800;
-// Vuelo corto (6.4 s): la frenada (2.6 s) es la llegada, donde aparece la marca; el crucero se acortó.
-const T = { accel: 1.4, cruise: 2.4, decel: 2.6 };
-// La bienvenida entra cuando empieza a frenar, no cuando pasa junto a la última estrella.
-const T_SETTLE = T.accel + T.cruise;
-const T_END = T.accel + T.cruise + T.decel;
 const BRAKE_S = 1.5;
-// Los cuerpos se acercan entre sí para que el último quede ATRÁS de la cámara antes de frenar:
-// así la pantalla queda limpia cuando aparece el logo (antes lo cruzaba una estrella gigante).
-const Z_SCALE = 1;
-// Apertura extra de campo de visión a velocidad máxima (sensación de velocidad).
-const FOV_KICK = 9;
-const speedAt = (t) => {
-  if (t < T.accel) return VMAX * (t / T.accel) ** 2;
-  if (t < T.accel + T.cruise) return VMAX;
-  return VMAX * (1 - (t - T.accel - T.cruise) / T.decel) ** 2;
-};
 
 const clamp = (v, [lo, hi]) => Math.min(hi, Math.max(lo, v));
 const wrapAngle = (a) => ((((a + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) - Math.PI;
 
-
-const planet = (z, x, y, r, cols, bands, ring) => ({ kind: 'planet', z, x, y, r, cols, bands, ring });
-const star = (z, x, y, r, color) => ({ kind: 'star', z, x, y, r, color });
-const DEFS = [
-  planet(-380, -75, 15, 30, ['#c9774a', '#a85a35', '#e0a070'], 14),
-  star(-760, 120, -20, 45, 0xffd27a),
-  planet(-1130, 105, -30, 50, ['#d9c08a', '#bfa06a', '#efe0b8', '#a88a55'], 22, true),
-  star(-1500, -130, 40, 70, 0xa8c8ff),
-  planet(-1820, -100, -10, 65, ['#7ac2b0', '#4f9a8c', '#a8e0d0', '#2f7468'], 18),
-  star(-2100, -100, -45, 85, 0xff5a2a),
-];
 
 const SURFACE_VS = 'varying vec3 vN;varying vec3 vP;void main(){vN=normalize(normalMatrix*normal);vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}';
 const SURFACE_FS = `precision highp float;varying vec3 vN;varying vec3 vP;uniform vec3 col;uniform float time;uniform float uAlpha;
@@ -92,6 +63,38 @@ void main(){
   gl_FragColor = vec4(vec3(0.78, 0.84, 1.0) * vB, a * uAlpha * vB);
 }`;
 
+// Planeta de destino (horizonte). Ruido 3D sobre la dirección de la superficie: sin costuras ni
+// pinzamiento en los polos aunque la esfera sea enorme y se vea de cerca.
+const DEST_VS = `varying vec3 vN; varying vec3 vP; varying vec3 vPos;
+void main(){ vN = normalize(normalMatrix * normal); vP = position; vPos = (modelViewMatrix * vec4(position, 1.0)).xyz; gl_Position = projectionMatrix * vec4(vPos, 1.0); }`;
+const DEST_FS = `precision highp float; varying vec3 vN; varying vec3 vP; varying vec3 vPos;
+uniform vec3 col; uniform float time; uniform float uAlpha;
+float h(vec3 p){p=fract(p*0.3183099+.1);p*=17.0;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}
+float n(vec3 x){vec3 i=floor(x),f=fract(x);f=f*f*(3.0-2.0*f);
+return mix(mix(mix(h(i),h(i+vec3(1,0,0)),f.x),mix(h(i+vec3(0,1,0)),h(i+vec3(1,1,0)),f.x),f.y),
+mix(mix(h(i+vec3(0,0,1)),h(i+vec3(1,0,1)),f.x),mix(h(i+vec3(0,1,1)),h(i+vec3(1,1,1)),f.x),f.y),f.z);}
+void main(){
+  vec3 d = normalize(vP);
+  float g = n(d*2.2 + vec3(time*.02,0.,0.))*.55 + n(d*5.5 - vec3(0.,time*.015,0.))*.3 + n(d*13.0)*.15;
+  float band = sin(d.y*7.0 + g*3.2)*.5 + .5;
+  vec3 base = col * (.35 + .65*mix(g, band, .3));
+  vec3 N = normalize(vN);
+  float lit = smoothstep(-0.15, 0.9, dot(N, normalize(vec3(.25,.85,.45))));
+  vec3 c = base * (.10 + .85*lit);
+  float rim = pow(1.0 - clamp(dot(N, normalize(-vPos)), 0.0, 1.0), 4.0);
+  c += col * rim * (.15 + .85*lit) * 2.2;
+  gl_FragColor = vec4(c, uAlpha);
+}`;
+// Atmósfera: cáscara algo mayor, vista por dentro; brilla justo en el borde y se apaga hacia fuera.
+const ATMO_VS = `varying vec3 vN; varying vec3 vPos;
+void main(){ vN = normalize(normalMatrix * normal); vPos = (modelViewMatrix * vec4(position, 1.0)).xyz; gl_Position = projectionMatrix * vec4(vPos, 1.0); }`;
+const ATMO_FS = `precision highp float; varying vec3 vN; varying vec3 vPos; uniform vec3 col; uniform float uAlpha;
+void main(){
+  float s = clamp(-dot(normalize(vN), normalize(-vPos)), 0.0, 1.0);
+  float i = clamp(pow(s, 2.5) * 4.0, 0.0, 1.0);
+  gl_FragColor = vec4(col, i * uAlpha);
+}`;
+
 function planetTexture(cols, bands, seed) {
   const c = document.createElement('canvas');
   c.width = 512;
@@ -132,8 +135,13 @@ export class World {
     this.mix = 0;
     this.starAlpha = STAR_ALPHA_FLIGHT;
     this.flightAlpha = 1;
-    this.appliedFlightAlpha = -1;
-    // arrive: 0 → 1 durante la llegada. Alimenta la coreografía del DOM (logo, texto, CTA).
+    this.destAlpha = 1;
+    this.destSink = 0;
+    this.appliedDestAlpha = -1;
+    this.sway = 0;
+    this.swayK = 0;
+    this.destBase = placeDest(16 / 9);
+
     this.arrive = 0;
     this.arriveApplied = -1;
     this.speedFrac = 0;
@@ -157,7 +165,7 @@ export class World {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.outputColorSpace = OUTPUT_COLOR_SPACE;
-    // Mismo azul-negro que --bg: el canvas y la página comparten fondo.
+
     this.renderer.setClearColor(0x05060f, 1);
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(70, 1, 0.5, 6000);
@@ -222,6 +230,8 @@ export class World {
     this.tween(this.view, 'pitch', v.pitch, ms);
     this.tween(this.view, 'fov', v.fov, ms);
     this.tween(this.view, 'dist', v.dist, ms);
+    this.tween(this, 'destSink', 1, 1600, { ease: EASE.inOut });
+    this.tween(this, 'destAlpha', 0, 1300, { ease: EASE.inOut });
     this.tween(this, 'starAlpha', 1, 1500, { delay: 350, ease: EASE.enter, onDone });
   }
 
@@ -333,53 +343,77 @@ export class World {
     } else {
       return;
     }
-    this.speedFrac = F.v / VMAX;
+    this.speedFrac = Math.min(1, F.v / VMAX);
     this.anchor.z -= F.v * dt;
     this.anchor.x = Math.sin(this.time * 1.2) * 1.2;
     this.anchor.y = Math.cos(this.time * 0.9) * 0.8;
   }
 
-  applyFlightAlpha(a) {
-    for (const { mat, base, uniform } of this.fade) {
-      if (uniform) mat.uniforms.uAlpha.value = a;
-      else mat.opacity = base * a;
-    }
-    this.flight.visible = a > 0.003;
-    this.appliedFlightAlpha = a;
+  // Opacidad de cada cuerpo de paso = desvanecimiento global × aparición por distancia × salida de cuadro.
+  updateBodies() {
+    const camZ = this.anchor.z;
+    const tanH = Math.tan((this.camera.fov * DEG) / 2) * this.camera.aspect;
+    let any = false;
+    this.bodies.forEach((b) => {
+      const dz = camZ - b.group.position.z;
+      let a = 0;
+      if (dz > 1) a = this.flightAlpha * depthFade(dz) * edgeFade((b.group.position.x - this.anchor.x) / (dz * tanH));
+      if (Math.abs(a - b.alpha) >= 0.002 || b.alpha === -1) {
+        b.alpha = a;
+        b.group.visible = a > 0.003;
+        for (const { mat, base, uniform } of b.fade) {
+          if (uniform) mat.uniforms.uAlpha.value = a;
+          else mat.opacity = base * a;
+        }
+      }
+      any = any || b.group.visible;
+    });
+    return any;
   }
 
+  applyDestAlpha(a) {
+    for (const m of this.destMats) m.uniforms.uAlpha.value = a;
+    this.dest.visible = a > 0.003;
+    this.appliedDestAlpha = a;
+  }
 
   buildFlight() {
     this.flight = new THREE.Group();
     this.scene.add(this.flight);
-    this.fade = [];
     this.spinners = [];
     this.starMats = [];
     this.glow = glowTexture();
     this.warp = new WarpField();
     this.warp.reset(0);
     this.scene.add(this.warp.object);
-    const track = (mat, base = 1) => {
-      mat.transparent = true;
-      mat.opacity = base;
-      this.fade.push({ mat, base });
-      return mat;
-    };
-    DEFS.forEach((d, i) => {
-      let mesh;
+
+    this.bodies = BODIES.map((d, i) => {
+      const fade = [];
+      const track = (mat, base = 1) => {
+        mat.transparent = true;
+        mat.opacity = base;
+        fade.push({ mat, base });
+        return mat;
+      };
+      const group = new THREE.Group();
       if (d.kind === 'planet') {
-        mesh = new THREE.Mesh(
+        // El eje del planeta va inclinado hacia la cámara: así el anillo se abre (antes se veía de canto).
+        group.rotation.set(d.lean, 0, d.tilt);
+        const mesh = new THREE.Mesh(
           new THREE.SphereGeometry(d.r, 48, 32),
           track(new THREE.MeshStandardMaterial({ map: planetTexture(d.cols, d.bands, i * 77 + 13), roughness: 0.9 })),
         );
         this.spinners.push({ mesh, speed: 0.05 + i * 0.01 });
+        group.add(mesh);
         if (d.ring) {
-          const ring = new THREE.Mesh(
-            new THREE.RingGeometry(d.r * 1.4, d.r * 2.2, 64),
-            track(new THREE.MeshBasicMaterial({ color: 0xc8b48c, side: THREE.DoubleSide }), 0.55),
-          );
-          ring.rotation.x = Math.PI / 2.4;
-          mesh.add(ring);
+          [[1.45, 1.85, 0.7, 0xc8b48c], [1.95, 2.3, 0.4, 0xe0d0aa]].forEach(([from, to, opacity, color]) => {
+            const ring = new THREE.Mesh(
+              new THREE.RingGeometry(d.r * from, d.r * to, 96),
+              track(new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, depthWrite: false }), opacity),
+            );
+            ring.rotation.x = Math.PI / 2;
+            group.add(ring);
+          });
         }
       } else {
         const mat = new THREE.ShaderMaterial({
@@ -389,19 +423,54 @@ export class World {
           uniforms: { col: { value: new THREE.Color(d.color) }, time: { value: 0 }, uAlpha: { value: 1 } },
         });
         this.starMats.push(mat);
-        this.fade.push({ mat, uniform: true });
-        mesh = new THREE.Mesh(new THREE.SphereGeometry(d.r, 64, 48), mat);
-        [[3.4, 0.9], [7, 0.5], [15, 0.22]].forEach(([scale, opacity]) => {
+        fade.push({ mat, uniform: true });
+        group.add(new THREE.Mesh(new THREE.SphereGeometry(d.r, 64, 48), mat));
+        // Halos más contenidos que antes (3,4/7/15 × r): a corta distancia teñían toda la pantalla.
+        [[2.6, 0.75], [5.2, 0.3], [9, 0.12]].forEach(([scale, opacity]) => {
           const sprite = new THREE.Sprite(
             track(new THREE.SpriteMaterial({ map: this.glow, color: d.color, blending: THREE.AdditiveBlending, depthWrite: false }), opacity),
           );
           sprite.scale.setScalar(d.r * scale);
-          mesh.add(sprite);
+          group.add(sprite);
         });
       }
-      mesh.position.set(d.x, d.y, d.z * Z_SCALE);
-      this.flight.add(mesh);
+      group.visible = false;
+      this.flight.add(group);
+      return { group, fade, alpha: -1 };
     });
+    this.buildDest();
+  }
+
+  // Horizonte de destino: un planeta enorme que sube desde abajo mientras la nave frena.
+  buildDest() {
+    this.dest = new THREE.Group();
+    this.scene.add(this.dest);
+    const color = new THREE.Color(DEST.color);
+    const surface = new THREE.ShaderMaterial({
+      vertexShader: DEST_VS,
+      fragmentShader: DEST_FS,
+      transparent: true,
+      uniforms: { col: { value: color }, time: { value: 0 }, uAlpha: { value: 1 } },
+    });
+    const atmosphere = new THREE.ShaderMaterial({
+      vertexShader: ATMO_VS,
+      fragmentShader: ATMO_FS,
+      transparent: true,
+      depthWrite: false,
+      side: THREE.BackSide,
+      blending: THREE.AdditiveBlending,
+      uniforms: { col: { value: new THREE.Color(0x2dd4bf) }, uAlpha: { value: 1 } },
+    });
+    this.destSurface = surface;
+    this.destMats = [surface, atmosphere];
+    this.dest.add(new THREE.Mesh(new THREE.SphereGeometry(DEST.r, 160, 96), surface));
+    this.dest.add(new THREE.Mesh(new THREE.SphereGeometry(DEST.r * 1.12, 128, 64), atmosphere));
+  }
+
+  // Coloca cuerpos y horizonte según el formato actual (se repite al redimensionar).
+  layoutFlight() {
+    placeBodies(this.camera.aspect).forEach((p, i) => this.bodies[i].group.position.set(p.x, p.y, p.z));
+    this.destBase = placeDest(this.camera.aspect);
   }
 
   buildBackdrop() {
@@ -570,6 +639,7 @@ export class World {
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
+    this.layoutFlight();
   }
 
 
@@ -597,7 +667,8 @@ export class World {
 
 
   updateCamera() {
-    const { yaw, pitch, fov, dist } = this.view;
+    const { pitch, fov, dist } = this.view;
+    const yaw = this.view.yaw + this.sway;
     const f = new THREE.Vector3(Math.cos(pitch) * Math.cos(yaw), Math.sin(pitch), -Math.cos(pitch) * Math.sin(yaw));
     const pos = f.clone().multiplyScalar(-dist * this.mix).add(this.anchor);
     this.camera.position.copy(pos);
@@ -643,12 +714,24 @@ export class World {
       this.arriveApplied = this.arrive;
       this.onArrive?.(this.arrive);
     }
-    if (this.drift && !this.exploring && !this.drag) this.view.yaw += dt * 0.02;
+    // Balanceo suave y acotado (±2,3°) en lugar de girar sin parar: el horizonte no se va de cuadro
+    // si la persona deja la bienvenida abierta.
+    const swayTarget = this.drift && !this.exploring && !this.drag ? 1 : 0;
+    this.swayK += (swayTarget - this.swayK) * Math.min(1, dt * 2.5);
+    this.sway = Math.sin(this.time * 0.22) * 0.04 * this.swayK;
 
-    if (this.flightAlpha !== this.appliedFlightAlpha) this.applyFlightAlpha(this.flightAlpha);
-    if (this.flight.visible) {
+    const bodiesOn = this.updateBodies();
+    if (bodiesOn) {
       this.spinners.forEach((s) => (s.mesh.rotation.y += dt * 2 * s.speed));
       this.starMats.forEach((m) => (m.uniforms.time.value = this.time * 2));
+    }
+    if (this.destAlpha !== this.appliedDestAlpha) this.applyDestAlpha(this.destAlpha);
+    if (this.dest.visible) {
+      // El horizonte va pegado a la cámara. Sube con la misma curva cúbica con la que frena la nave.
+      const { y, z, rise, exit } = this.destBase;
+      const lift = (1 - this.arrive) ** 3 * rise + this.destSink * exit;
+      this.dest.position.set(this.anchor.x, this.anchor.y + y - lift, this.anchor.z + z);
+      this.destSurface.uniforms.time.value = this.time;
     }
     this.uniforms.uMix.value = this.mix;
     this.uniforms.uAlpha.value = this.starAlpha;
