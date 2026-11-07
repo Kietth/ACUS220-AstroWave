@@ -1,0 +1,125 @@
+/* ───────────────────────── Fases ─────────────────────────
+   flight  → vuelo cinemático (solo canvas)
+   welcome → llegada: el logo y el texto se revelan al ritmo de la frenada de la cámara
+   entering → "Explorar": el logo viaja a la barra y la interfaz entra escalonada
+   ready   → interactivo                                                    */
+.app:is([data-phase='flight'], [data-phase='welcome']) .ui { visibility: hidden; }
+
+.skip {
+  position: fixed; z-index: 6;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: calc(env(safe-area-inset-bottom) + 16px);
+  background: rgba(11, 26, 43, 0.6);
+  animation: fadein 0.6s ease 1s both;
+}
+
+/* ───────────────────────── Llegada ─────────────────────────
+   Las variables --a-* (0 → 1) las escribe App.jsx desde el reloj del 3D: no hay animaciones por tiempo
+   independientes, el DOM sigue a la cámara. Valen 0 hasta que la nave empieza a frenar. */
+.arrive { display: contents; --a-glow: 0; --a-logo: 0; --a-lead: 0; --a-sub: 0; --a-cta: 0; }
+
+.welcome {
+  position: fixed; inset: 0; z-index: 5;
+  display: flex; flex-direction: column; align-items: center;
+  gap: clamp(10px, 2dvh, 18px);
+  padding: calc(clamp(32px, 13dvh, 140px) + env(safe-area-inset-top)) 24px 0;
+  text-align: center;
+  pointer-events: none;
+}
+.welcome > * { pointer-events: auto; }
+
+/* Velo de contraste (texto sobre escena en movimiento) teñido con el azul de la marca,
+   más un halo teal que deja caer la luz del logo sobre el espacio. */
+.welcome::before {
+  content: ''; position: absolute; inset: 0; z-index: -1;
+  opacity: var(--a-glow);
+  background:
+    radial-gradient(ellipse 58% 40% at 50% 22%, var(--glow-teal), transparent 72%),
+    radial-gradient(ellipse at 50% 24%, rgba(5, 6, 15, 0.55), transparent 62%);
+}
+
+/* El logo "se acerca" y se enfoca: crece 0.9 → 1 mientras el desenfoque de movimiento se disuelve. */
+.welcome__logo {
+  font-size: clamp(34px, 7.5vw, 68px);
+  opacity: var(--a-logo);
+  transform: scale(calc(0.9 + 0.1 * var(--a-logo)));
+  filter: blur(calc((1 - var(--a-logo)) * 12px));
+  will-change: opacity, transform, filter;
+}
+.welcome__logo.is-docked { visibility: hidden; }
+
+.welcome__lead {
+  font-size: clamp(17px, 2.4vw, 26px);
+  opacity: var(--a-lead);
+  transform: translateY(calc((1 - var(--a-lead)) * 14px));
+  filter: blur(calc((1 - var(--a-lead)) * 6px));
+}
+.welcome__sub {
+  max-width: 460px; color: var(--muted);
+  opacity: var(--a-sub);
+  transform: translateY(calc((1 - var(--a-sub)) * 14px));
+  filter: blur(calc((1 - var(--a-sub)) * 6px));
+}
+.welcome__cta {
+  min-width: 170px; min-height: 52px; margin-top: 8px; font-size: 16px;
+  opacity: var(--a-cta);
+  transform: translateY(calc((1 - var(--a-cta)) * 10px));
+}
+.welcome__cta:disabled { cursor: default; }
+
+/* ───────────────────────── Salida de la bienvenida ─────────────────────────
+   El logo no se desvanece: Welcome.jsx lo lleva hasta la barra. Lo demás sale rápido (curva "exit"),
+   en orden inverso al de entrada. */
+.welcome.is-leaving > * { pointer-events: none; }
+.welcome.is-leaving :is(.welcome__lead, .welcome__sub, .welcome__cta) {
+  opacity: 0; transform: translateY(6px) scale(0.985); filter: blur(4px);
+  transition:
+    opacity var(--dur-short) var(--ease-exit),
+    transform var(--dur-short) var(--ease-exit),
+    filter var(--dur-short) var(--ease-exit);
+}
+.welcome.is-leaving .welcome__sub { transition-delay: 40ms; }
+.welcome.is-leaving .welcome__lead { transition-delay: 80ms; }
+.welcome.is-leaving::before { opacity: 0; transition: opacity var(--dur-long) var(--ease-exit) 120ms; }
+
+/* El logo de la barra espera oculto hasta que el logo de la bienvenida aterriza sobre él. */
+.topbar__logo.is-pending { opacity: 0; }
+
+/* ───────────────────────── Entrada de la interfaz ─────────────────────────
+   Cada región entra desde su borde, escalonada mientras la cámara termina de acomodarse.
+   Solo se define el "from": el estado final es el estilo propio del elemento (no pisa
+   transforms existentes como el del panel de detalle en móvil). */
+@keyframes ui-in-top { from { opacity: 0; transform: translateY(-10px); } }
+@keyframes ui-in-left { from { opacity: 0; transform: translateX(-16px); } }
+@keyframes ui-in-right { from { opacity: 0; transform: translateX(16px); } }
+@keyframes ui-in-bottom { from { opacity: 0; transform: translateY(14px); } }
+@keyframes ui-in-fade { from { opacity: 0; } }
+
+/* El degradado de la barra se saca de .topbar para que aparezca con su propia animación. */
+.topbar { position: relative; background: none; }
+.topbar::before {
+  content: ''; position: absolute; inset: 0 0 -12px; z-index: -1; pointer-events: none;
+  background: linear-gradient(rgba(5, 6, 15, 0.7), transparent);
+}
+
+.app:is([data-phase='entering'], [data-phase='ready']) .topbar::before { animation: ui-in-fade var(--dur-long) var(--ease-enter) 300ms backwards; }
+.app:is([data-phase='entering'], [data-phase='ready']) .topbar > :not(.topbar__logo) { animation: ui-in-top var(--dur-long) var(--ease-enter) 420ms backwards; }
+.app:is([data-phase='entering'], [data-phase='ready']) .catalog { animation: ui-in-left var(--dur-long) var(--ease-enter) 560ms backwards; }
+.app:is([data-phase='entering'], [data-phase='ready']) .detail { animation: ui-in-right var(--dur-long) var(--ease-enter) 680ms backwards; }
+.app:is([data-phase='entering'], [data-phase='ready']) .zoom { animation: ui-in-right var(--dur-long) var(--ease-enter) 760ms backwards; }
+.app:is([data-phase='entering'], [data-phase='ready']) .player { animation: ui-in-bottom var(--dur-long) var(--ease-enter) 620ms backwards; }
+.app:is([data-phase='entering'], [data-phase='ready']) .hint { animation: ui-in-fade var(--dur-long) var(--ease-enter) 900ms backwards; }
+
+@media (max-height: 520px) {
+  .welcome { padding-top: calc(16px + env(safe-area-inset-top)); gap: 8px; }
+  .welcome__sub { display: none; }
+}
+
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .skip { animation: none; }
+  .welcome__logo, .welcome__lead, .welcome__sub, .welcome__cta { transform: none; filter: none; }
+  .welcome.is-leaving :is(.welcome__lead, .welcome__sub, .welcome__cta), .welcome.is-leaving::before { transition: none; }
+  .topbar::before, .topbar > *, .catalog, .detail, .zoom, .player, .hint { animation: none !important; }
+}
