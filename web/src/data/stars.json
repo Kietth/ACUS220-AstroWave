@@ -1,0 +1,10 @@
+[
+  { "id": "sun", "name": "Sol", "spectralType": "G2V", "temperatureK": 5778, "parallaxMas": 8794.15, "raDeg": 222.5, "decDeg": -16.5, "isLocal": true },
+  { "id": "betelgeuse", "name": "Betelgeuse", "spectralType": "M1-M2Ia-Iab", "temperatureK": 3601.63, "parallaxMas": 6.55, "raDeg": 88.79, "decDeg": 7.41 },
+  { "id": "aldebaran", "name": "Aldebarán", "spectralType": "K5+III", "temperatureK": 3902.56, "parallaxMas": 48.94, "raDeg": 68.98, "decDeg": 16.51 },
+  { "id": "vega", "name": "Vega", "spectralType": "A0V", "temperatureK": 9458.31, "parallaxMas": 130.23, "raDeg": 279.23, "decDeg": 38.78 },
+  { "id": "sirius", "name": "Sirius", "spectralType": "A0m/A1Va", "temperatureK": 9711.95, "parallaxMas": 379.21, "raDeg": 101.29, "decDeg": -16.72 },
+  { "id": "rigel", "name": "Rigel", "spectralType": "B8Ia", "temperatureK": 12100, "parallaxMas": 3.78, "raDeg": 78.63, "decDeg": -8.2 },
+  { "id": "altair", "name": "Altair", "spectralType": "A7V", "temperatureK": 7550, "parallaxMas": 194.95, "raDeg": 297.7, "decDeg": 8.87, "estimated": true },
+  { "id": "antares", "name": "Antares", "spectralType": "M1Ib", "temperatureK": 3660, "parallaxMas": 5.89, "raDeg": 247.35, "decDeg": -26.43, "estimated": true }
+]

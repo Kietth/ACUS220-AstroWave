@@ -1,0 +1,27 @@
+# Dependencias y build
+node_modules/
+dist/
+.vite/
+
+# Variables de entorno (nunca subir claves)
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# Tests y cobertura
+coverage/
+
+# Despliegue local (CLI de Cloudflare y Vercel)
+.wrangler/
+.vercel/
+
+# Editor y sistema operativo
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
